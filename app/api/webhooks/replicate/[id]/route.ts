@@ -5,14 +5,22 @@ export const runtime = "edge";
 
 const ALLOWED_OUTPUT_HOSTS = new Set(["pbxt.replicate.delivery"]);
 
-function isAllowedOutputUrl(rawUrl: unknown): rawUrl is string {
-  if (typeof rawUrl !== "string") return false;
+function getValidatedOutputUrl(rawUrl: unknown): string | null {
+  if (typeof rawUrl !== "string") return null;
 
   try {
     const parsed = new URL(rawUrl);
-    return parsed.protocol === "https:" && ALLOWED_OUTPUT_HOSTS.has(parsed.hostname);
+
+    if (parsed.protocol !== "https:") return null;
+    if (!ALLOWED_OUTPUT_HOSTS.has(parsed.hostname)) return null;
+    if (parsed.username || parsed.password) return null;
+    if (parsed.port && parsed.port !== "443") return null;
+    if (!parsed.pathname.startsWith("/")) return null;
+    if (parsed.pathname.includes("..")) return null;
+
+    return parsed.toString();
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -35,11 +43,12 @@ export async function POST(req: NextRequest) {
 
   // Prediction successful --> upload output to supabase storage --> update db output url --> user receives output via supabase realtime
   if (status === "succeeded") {
-    if (!isAllowedOutputUrl(output)) {
+    const safeOutputUrl = getValidatedOutputUrl(output);
+    if (!safeOutputUrl) {
       return new Response("Invalid output URL", { status: 400 });
     }
 
-    const blob = await fetch(output).then((res) => res.blob());
+    const blob = await fetch(safeOutputUrl).then((res) => res.blob());
     const { data: storageData, error: storageError } = await supabase.storage
       .from("output")
       .upload(`/${data?.user_id}/${id}`, blob, {
