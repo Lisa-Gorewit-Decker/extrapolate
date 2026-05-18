@@ -3,6 +3,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "edge";
 
+const ALLOWED_OUTPUT_HOSTS = new Set(["pbxt.replicate.delivery"]);
+
+function isAllowedOutputUrl(rawUrl: unknown): rawUrl is string {
+  if (typeof rawUrl !== "string") return false;
+
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.protocol === "https:" && ALLOWED_OUTPUT_HOSTS.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const id = req.nextUrl.pathname.split("/")[4];
   const { output, status } = await req.json();
@@ -22,6 +35,10 @@ export async function POST(req: NextRequest) {
 
   // Prediction successful --> upload output to supabase storage --> update db output url --> user receives output via supabase realtime
   if (status === "succeeded") {
+    if (!isAllowedOutputUrl(output)) {
+      return new Response("Invalid output URL", { status: 400 });
+    }
+
     const blob = await fetch(output).then((res) => res.blob());
     const { data: storageData, error: storageError } = await supabase.storage
       .from("output")
