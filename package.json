@@ -63,7 +63,7 @@
     "use-debounce": "^10.0.0",
     "usehooks-ts": "^3.1.0",
     "vaul": "^0.9.1",
-    "zustand": "^5.0.1",
+    "zustand": "^5.0.1"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.7",
@@ -83,8 +83,7 @@
     "supabase": "^1.165.0",
     "tailwindcss": "^3.4.3",
     "typescript": "5.4.5",
-    "zustand": "5.0.1",
-    
+    "zustand": "5.0.1"
   },
   "eslintConfig": {
     "extends": [
@@ -100,6 +99,9 @@
     "plugins": [
       "prettier-plugin-tailwindcss"
     ]
+  },
+  "overrides": {
+    "ws": ">=8.21.0"
   },
   "packageManager": "pnpm@9.3.0+sha512.ee7b93e0c2bd11409c6424f92b866f31d3ea1bef5fbe47d3c7500cdc3c9668833d2e55681ad66df5b640c61fa9dc25d546efa54d76d7f8bf54b13614ac293631"
 }
