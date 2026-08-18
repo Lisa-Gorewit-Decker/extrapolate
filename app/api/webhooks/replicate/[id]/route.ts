@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "edge";
 
-const ALLOWED_OUTPUT_HOSTS = new Set(["pbxt.replicate.delivery"]);
+const ALLOWED_OUTPUT_HOSTS = new Set(["replicate.delivery", "pbxt.replicate.delivery"]);
 
 function getValidatedOutputUrl(rawUrl: unknown): string | null {
   if (typeof rawUrl !== "string") return null;
