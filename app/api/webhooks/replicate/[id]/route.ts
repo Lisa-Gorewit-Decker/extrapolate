@@ -10,15 +10,18 @@ function getValidatedOutputUrl(rawUrl: unknown): string | null {
 
   try {
     const parsed = new URL(rawUrl);
+    const hostname = parsed.hostname.toLowerCase();
+    const decodedPathname = decodeURIComponent(parsed.pathname);
 
     if (parsed.protocol !== "https:") return null;
-    if (!ALLOWED_OUTPUT_HOSTS.has(parsed.hostname)) return null;
+    if (!ALLOWED_OUTPUT_HOSTS.has(hostname)) return null;
     if (parsed.username || parsed.password) return null;
     if (parsed.port && parsed.port !== "443") return null;
     if (!parsed.pathname.startsWith("/")) return null;
-    if (parsed.pathname.includes("..")) return null;
+    if (decodedPathname.split("/").some((seg) => seg === "..")) return null;
+    if (parsed.hash) return null;
 
-    return parsed.toString();
+    return `${parsed.origin}${parsed.pathname}${parsed.search}`;
   } catch {
     return null;
   }
@@ -48,7 +51,13 @@ export async function POST(req: NextRequest) {
       return new Response("Invalid output URL", { status: 400 });
     }
 
-    const blob = await fetch(safeOutputUrl).then((res) => res.blob());
+    const fetchRes = await fetch(safeOutputUrl, { redirect: "error" });
+    if (!fetchRes.ok) {
+      return new Response(`Failed to fetch output: ${fetchRes.status}`, {
+        status: 400,
+      });
+    }
+    const blob = await fetchRes.blob();
     const { data: storageData, error: storageError } = await supabase.storage
       .from("output")
       .upload(`/${data?.user_id}/${id}`, blob, {
